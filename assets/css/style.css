@@ -1,0 +1,130 @@
+:root {
+  --primary-color: #79B4D2;
+  --secondary-color: #522f5f;
+  --bg-color: linear-gradient(to right, rgba(229, 231, 235, 0.8) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(229, 231, 235, 0.8) 1px, transparent 1px),
+    radial-gradient(circle 500px at 20% 80%, rgba(139, 92, 246, 0.3), transparent),
+    radial-gradient(circle 500px at 80% 20%, rgba(59, 130, 246, 0.3), transparent);
+
+    --border1: rgba(63, 29, 75, 0.3);
+    --border2: rgba(121, 180, 210, 0.8);
+}
+body{
+  /* overflow-x: hidden; */
+}
+* {
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+}
+#main {
+  width: 100vw;
+  min-height: 100vh;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-image: var(--bg-color);
+  background-size: 48px 48px, 48px 48px, 100% 100%, 100% 100%;
+  /* background-color: black; */
+
+}
+#main p, #main h2 {
+  padding: 0;
+  margin: 0;
+}
+#main h1, #main h5 {
+  font-weight: bold;
+}
+#main a{
+  text-decoration: none;
+  color: inherit;
+}
+button {
+  background: none;
+  border: none;
+}
+.color1 {
+  color: var(--primary-color);
+}
+.color-bg-1 {
+  background-color: var(--primary-color);
+}
+.color2 {
+  color: var(--secondary-color);
+}
+.color-bg-2 {
+  background-color: var(--secondary-color);
+}
+.logo {
+  font-family: "Permanent Marker", cursive;
+  font-weight: 400;
+  font-style: normal;
+  font-size: 25px;
+}
+#main .containers{
+  backdrop-filter: blur(5px);
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+  
+}
+
+.loader-container {
+  position: absolute;
+  width: 97%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: rgba(255, 255, 255, 0.9);
+  z-index: 10;
+  border-radius: 20px;
+}
+.loader{
+  width: 50px; height: 50px;
+  border: 7px dotted var(--secondary-color);
+  border-top: 7px solid var(--primary-color);
+  border-bottom: 7px solid var(--primary-color);
+  border-radius: 100%;
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+.carousel-img {
+  width: 85%;
+}
+.forms input, .forms select{
+  border-radius: 50px;
+  border: 1px solid var(--primary-color);
+  background: none;
+}
+.forms input:focus, .forms select:focus {
+  box-shadow: 0 0 5px var(--primary-color);
+  background: none;
+}
+.slider-container{
+  border-radius: 10px;
+  border: 1px solid var(--border2);
+}
+#courseSlider img{
+  height: 250px;
+  border-radius: 10px;
+}
+.lecture-item{
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border2);
+}
+.lecture-item:nth-child(even) {
+  background-color: rgba(121, 180, 210, 0.1);
+}
+.log-out{
+  background-color: var(--primary-color);
+  border-radius: 20px;
+  font-weight: bold
+}
+.quick-actions button{
+  width: 100%;
+
+}
