@@ -60,6 +60,13 @@ class User extends Connection
         $stmt->execute();
         return $stmt->get_result();
     }
+
+    function getStudent($studentId){
+        $stmt = $this->connection->prepare("SELECT a.firstName, a.lastName, a.matNo, b.name AS department FROM students a JOIN departments b ON a.departmentId = b.id WHERE a.id = ?");
+        $stmt->bind_param("i", $studentId);
+        $stmt->execute();
+        return $stmt->get_result();
+    }
 }
 
 ?>

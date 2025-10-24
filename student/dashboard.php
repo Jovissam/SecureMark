@@ -1,9 +1,33 @@
 <?php
+require_once("../models/Course.php");
+require_once("../models/Lecture.php");
+require_once("../models/Attendance.php");
+require_once("../models/User.php");
 session_start();
 if (!isset($_SESSION['user'])) {
     header("Location: ../index.php");
     exit();
-}?>
+} else {
+    $studentId = $_SESSION["userId"];
+
+    $courses = new Course();
+    $registeredCourses = $courses->getStudentCourses($studentId);
+    $registeredCourseId = [];
+    if ($registeredCourses->num_rows > 0) {
+        while ($row = $registeredCourses->fetch_assoc()) {
+            $registeredCourseId[] = $row["courseId"];
+        }
+        $values = implode(",", $registeredCourseId);
+        $lecture = new Lecture();
+        $getStudentLectures = $lecture->getStudentLectures($values);
+    }
+    // GET PREVIOUS LECTURES
+    $attendance = new Attendance();
+    $prevAttendance = $attendance->getPreviousAttendance($studentId);
+
+    $user = new User();
+    $getUser = $user->getStudent($studentId);
+} ?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -26,14 +50,19 @@ if (!isset($_SESSION['user'])) {
             <section class="container">
                 <div class="d-flex containers rounded-4 py-4 my-4 align-items-center">
                     <div class="mx-3">
-                        <img width="120px" class="profile-pic img-fluid rounded-circle border border-3" 
-                             src="../assets/images/icons/profile.png" alt="Student Profile">
+                        <img width="120px" class="profile-pic img-fluid rounded-circle border border-3"
+                            src="../assets/images/icons/profile.png" alt="Student Profile">
                     </div>
-                    <div class="profile-info fw-bold d-flex flex-column align-items-start justify-content-center">
-                        <h2 class="mb-1">Welcome, <span class="text-primary">Doe</span></h2>
-                        <p class="text-muted mb-1">Department of Computer Science</p>
-                        <p class="badge bg-primary fs-6 px-3">Mat-No: 123456</p>
+                    <?php if ($getUser->num_rows > 0):?>
+                    <?php while ($data = $getUser->fetch_assoc()):?>
+                        <div class="profile-info fw-bold d-flex flex-column align-items-start justify-content-center">
+                        <h2 class="mb-1">Welcome, <span class="text-primary"><?= $data["lastName"]?></span></h2>
+                        <p class="text-muted mb-1">Department of <?= $data["department"]?></p>
+                        <p class="badge bg-primary fs-6 px-3">Mat-No: <?= $data["matNo"]?></p>
                     </div>
+                    <?php endwhile?>
+                    <?php endif?>
+                    
                 </div>
 
                 <!-- Dashboard Row -->
@@ -81,31 +110,36 @@ if (!isset($_SESSION['user'])) {
 
                         <!-- Upcoming Lectures -->
                         <div class="my-4">
-                            <h5 class="fw-bold mb-3">📅 Upcoming Lectures</h5>
+                            <h5 class="fw-bold mb-3">📅 Today Lectures</h5>
                             <div class="slider-container p-2 containers rounded-4">
-                                <div id="courseSlider" class="carousel slide">
-                                    <div class="carousel-inner rounded-4 overflow-hidden">
-                                        <div class="carousel-item active">
-                                            <a href="">
-                                                <img src="../dump/course1.jpeg" class="d-block w-100" alt="Lecture 1">
-                                            </a>
-                                        </div>
-                                        <div class="carousel-item">
-                                            <img src="../dump/course2.jpeg" class="d-block w-100" alt="Lecture 2">
-                                        </div>
-                                        <div class="carousel-item">
-                                            <img src="../dump/course3.jpeg" class="d-block w-100" alt="Lecture 3">
-                                        </div>
-                                    </div>
-                                    <button class="carousel-control-prev" type="button" data-bs-target="#courseSlider" data-bs-slide="prev">
-                                        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-                                        <span class="visually-hidden">Previous</span>
-                                    </button>
-                                    <button class="carousel-control-next" type="button" data-bs-target="#courseSlider" data-bs-slide="next">
-                                        <span class="carousel-control-next-icon" aria-hidden="true"></span>
-                                        <span class="visually-hidden">Next</span>
-                                    </button>
-                                </div>
+                                <?php if ($getStudentLectures->num_rows > 0): ?>
+                                    <?php while ($row = $getStudentLectures->fetch_assoc()) : ?>
+
+                                        <!-- get the date -->
+                                        <?php $lectureDate = explode(" ", $row["createdAt"]); ?>
+
+                                        <?php if ($lectureDate[0] == date("Y-m-d")):?>
+                                            <?php $activeLecture = true; ?>
+                                            <div class="lecture-card shadow-sm rounded-4 p-3 flex-shrink-0">
+                                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                                    <h6 class="fw-bold text-primary mb-0"><?= $row["courseCode"] ?></h6>
+                                                    <span class="badge bg-success">Today</span>
+                                                </div>
+                                                <p class="text-muted small mb-1"><?= $row["topic"] ?></p>
+                                                <p class="small mb-1"><?= $row["venue"] ?></p>
+                                                <p class="small text-secondary mb-2"><?= $row["startTime"] ?> – <?= $row["endTime"] ?></p>
+                                                <div class="text-center">
+                                                    <button class="btn btn-outline-primary btn-sm rounded-pill px-3">
+                                                        <a href="markAttendance.php?lectureId=<?= $row["id"]?>">Mark Attendance</a>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        <?php endif ?>
+                                    <?php endwhile ?>
+                                    <?php if (!isset($activeLecture)):?>
+                                        <h5 class="text-center color2">No Lectures Today Yet</h5>
+                                    <?php endif?>
+                                <?php endif ?>
                             </div>
                         </div>
                     </div>
@@ -115,27 +149,30 @@ if (!isset($_SESSION['user'])) {
                         <h5 class="fw-bold mb-3">📖 Previous Lectures</h5>
                         <div class="containers rounded-4 p-3">
                             <div class="lecture-list">
-                                <div class="lecture-item d-flex justify-content-between align-items-center py-2 border-bottom">
+                                <?php if ($prevAttendance->num_rows > 0): ?>
+                                    <?php while ($rows = $prevAttendance->fetch_assoc()): ?>
+                                        <div class="lecture-item d-flex justify-content-between align-items-center py-2 border-bottom">
+                                            <div>
+                                                <h6 class="mb-1"><span class="color1"><?= $rows["courseCode"] ?></span> <?= $rows["topic"] ?></h6>
+                                                <p class="text-muted mb-0">Date: <?= $rows["lectureDate"] ?></p>
+                                            </div>
+                                            <?php if ($rows["status"] == "present"): ?>
+                                                <img src="../assets/images/icons/present.png" width="24" height="24" alt="Present">
+                                            <?php else: ?>
+                                                <img src="../assets/images/icons/absent.png" width="24" height="24" alt="Absent">
+                                            <?php endif ?>
+
+                                        </div>
+                                    <?php endwhile ?>
+                                <?php endif ?>
+                                <!-- <div class="lecture-item d-flex justify-content-between align-items-center py-2 border-bottom">
                                     <div>
                                         <h6 class="mb-1">Data Structures</h6>
                                         <p class="text-muted mb-0">Date: 2023-01-01</p>
                                     </div>
                                     <img src="../assets/images/icons/present.png" width="24" height="24" alt="Present">
-                                </div>
-                                <div class="lecture-item d-flex justify-content-between align-items-center py-2 border-bottom">
-                                    <div>
-                                        <h6 class="mb-1">Database Systems</h6>
-                                        <p class="text-muted mb-0">Date: 2023-01-02</p>
-                                    </div>
-                                    <img src="../assets/images/icons/absent.png" width="24" height="24" alt="Absent">
-                                </div>
-                                <div class="lecture-item d-flex justify-content-between align-items-center py-2">
-                                    <div>
-                                        <h6 class="mb-1">Computer Networks</h6>
-                                        <p class="text-muted mb-0">Date: 2023-01-03</p>
-                                    </div>
-                                    <img src="../assets/images/icons/present.png" width="24" height="24" alt="Present">
-                                </div>
+                                </div> -->
+
                             </div>
                         </div>
                     </div>

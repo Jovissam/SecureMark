@@ -25,15 +25,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && $headers["action"] == "createLecture
 
     switch ($hallType) {
         case 'small':
-            $locationRadius = 0.02; // ~20 meters
+            $locationRadius = 30; // 30 meters
             break;
 
         case 'medium':
-            $locationRadius = 0.1; // ~100 meters
+            $locationRadius = 60; // 60 meters
             break;
 
         case 'big':
-            $locationRadius = 0.5; // ~500 meters
+            $locationRadius = 120; // 120 meters
             break;
     }
     if (empty($latitude) || empty($longitude) || empty($locationRadius) || empty($topic) || empty($date) || empty($startTime) || empty($endTime) || empty($qrCodeDuration)) {
@@ -73,7 +73,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && $headers["action"] == "createLecture
 
             if ($registeredStudents->num_rows > 0) {
                 while ($rows = $registeredStudents->fetch_assoc()) {
-                    $status = $lecture->markAbsent($lectureId, $rows["studentId"], "absent");
+                    $status = $lecture->markAbsent($lectureId, $rows["studentId"], "absent", $courseId);
                 }
                 echo json_encode(["response" => "Lecture Created Successfully"]);
             } else {
@@ -128,7 +128,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && $headers["action"] == "updateQrCode"
                 echo json_encode(["response" => "error updating QR Code"]);
             }
         } else {
-            echo json_encode(["response" => $file]);
+            echo json_encode(["response" => "file not found"]);
         }
     } else {
         echo json_encode(["response" => "error"]);
@@ -154,6 +154,73 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && $headers["action"] == "changeAttenda
             echo json_encode(["response" => "successful"]);
         } else {
             echo json_encode(["response" => "error marking present"]);
+        }
+    }
+}
+// MARK SMART ATTENDANCE
+
+if ($_SERVER["REQUEST_METHOD"] == "POST" && $headers["action"] == "smartMark") {
+    $lectureId = $_POST["lectureId"];
+    $studentId = $_POST["studentId"];
+    $lat = $_POST["lat"];
+    $lng = $_POST["lng"];
+    $qrCode = $_POST["qrCode"];
+
+    if (!$lectureId || !$studentId || !$lat || !$lng || !$qrCode) {
+        echo json_encode(["response" => "Error getting your details: make sure you scan and allow location access"]);
+    } else {
+        // check if the student  is absent for the lecture
+        $attendance = new Attendance();
+        $checkAttendance = $attendance->checkAttendanceStatus($studentId, $lectureId, "absent");
+        if ($checkAttendance == "true") {
+            // GET LECTURE 
+            $lecture = new Lecture();
+            $getLecture = $lecture->getLecture($lectureId);
+            if ($getLecture->num_rows > 0) {
+                while ($row = $getLecture->fetch_assoc()) {
+                    $lecLat = $row["latitude"];
+                    $lecLng = $row["longitude"];
+                    $allowedRange = $row["locationRadius"];
+                    $lectureExpiry = $row["qrExpiresAt"];
+                    $lecQrCode = $row["qrCode"];
+                }
+                //  CALCULATE DISTANCE BETWEEN STUDENT AND LECTURE HALL
+                $distance = $lecture->calculateDistance($lecLat, $lecLng, $lat, $lng);
+
+                if ($distance > $allowedRange) {
+                    echo json_encode(["response" => "Cannot mark Attendance: You are far Away from Lecture Location " . round($distance) . "m"]);
+                    exit;
+                }
+
+                // CHECK IF CODE MATCHED
+                    $qrData = json_decode($qrCode, true);
+                    $token = $qrData["token"] ?? null;
+
+                    if ($token != $lecQrCode) {
+                        echo json_encode(["response" => "QR Code Mismatch"]);
+                        exit;
+                    }
+
+
+                // CHECK IF CODE IS EXPIRED
+                $timeDifference = $lectureExpiry - time();
+                if ($timeDifference < 0) {
+                    echo json_encode(["response" => "QR Code is Already Expired"]);
+                } elseif ($timeDifference > 0) {
+
+                    $attendance = new Attendance();
+                    $smartMark = $attendance->smartMark($studentId, $lectureId, "present");
+                    if ($smartMark) {
+                        echo json_encode(["response" => "Success: Attendance Marked "]);
+                    } else {
+                        echo json_encode(["response" => "Error: unable to mark attendane, please try again later"]);
+                    }
+                }
+            } else {
+                echo json_encode(["response" => "Error: please try again"]);
+            }
+        } else {
+            echo json_encode(["response" => "You are already marked present"]);
         }
     }
 }

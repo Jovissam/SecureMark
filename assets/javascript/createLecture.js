@@ -14,7 +14,7 @@ if (navigator.geolocation) {
     },
     {
       enableHighAccuracy: true, // forces GPS
-      timeout: 10000, // wait up to 10s
+      timeout: 20000, // wait up to 10s
       maximumAge: 0, // don’t use cached position
     }
   );

@@ -30,6 +30,35 @@ class Attendance extends Connection
         $stmt->execute();
         return $stmt->get_result();
     }
+    function getPreviousAttendance($studentId){
+        $stmt = "SELECT a.status, b.courseTitle, b.courseCode, c.lectureDate, c.topic FROM attendance a JOIN courses b ON a.courseId = b.id JOIN lectures c ON a.lectureId = c.id WHERE a.studentId = $studentId";
+        $result = $this->connection->query($stmt);
+        return $result;
+    }
+    //  C`HECK A STUDENT ATTENDANCE STATUS
+    function checkAttendanceStatus($studentId, $lectureId, $status){
+        $stmt = $this->connection->prepare("SELECT * FROM attendance WHERE studentId = ? AND lectureId = ? AND status = ?");
+        $stmt->bind_param("iis", $studentId, $lectureId, $status);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        if ($result->num_rows > 0) {
+            return true;
+        }else{
+            return false;
+        }
+    }
+    // MARK A STUDENT ABSENT OR PRESENT WITH STUDENTID AND LECTURE ID
+    function smartMark($studentId, $lectureId, $status){
+        $stmt = $this->connection->prepare("UPDATE attendance SET status = ? WHERE studentId = ? AND lectureId = ?");
+        $stmt->bind_param("sii", $status, $studentId, $lectureId);
+        if ($stmt->execute()) {
+            return true;
+        }else {
+            return false;
+        }
+
+    }
 }
 
 ?>

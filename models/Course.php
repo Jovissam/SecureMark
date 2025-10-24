@@ -86,6 +86,13 @@ class Course extends Connection
         $result = $this->connection->query($stmt);
         return $result;
     }
+    // GET APPROVED COURSES REGISTERED BY A STUDENT
+    function getStudentCourses($studentId){
+        $stmt = "SELECT courseId FROM courseRegistrations WHERE studentId = $studentId AND status = 'approved'";
+        $result = $this->connection->query($stmt);
+        return $result;
+    }
+    
 }
 
 
